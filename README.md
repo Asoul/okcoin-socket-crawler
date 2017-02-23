@@ -3,7 +3,7 @@
 一個串接 okcoin websocket 的小爬蟲，把資料存到 MySQL，附上 supervisor 腳本可以長期開在伺服器上。
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Asoul/okcoin-socket-crawler/master/img/okcoin.png"></img>
+  <img src="https://raw.githubusercontent.com/Asoul/okcoin-socket-crawler/master/img/okcoin.jpg"></img>
 </p>
 
 ## 基本需求
@@ -70,7 +70,7 @@ sudo supervisorctl start okcoin-socket-crawler
 # License
 MIT
 
-# Donate
+# Donation
 
 BTC 錢包: 3QB4Liv4Yp1ttpHnk8DT135juhKTBEWDc7
 
