@@ -1,0 +1,7 @@
+appdirs==1.4.1
+packaging==16.8
+PyMySQL==0.7.10
+pyparsing==2.1.10
+six==1.10.0
+SQLAlchemy==1.1.5
+websocket-client==0.40.0
