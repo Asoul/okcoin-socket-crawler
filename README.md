@@ -70,9 +70,9 @@ sudo supervisorctl start okcoin-socket-crawler
 # License
 MIT
 
-# Donate
+# Donation
 
-BTC 錢包: 3QB4Liv4Yp1ttpHnk8DT135juhKTBEWDc7
+BTC 錢包: `3QB4Liv4Yp1ttpHnk8DT135juhKTBEWDc7`
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Asoul/okcoin-socket-crawler/master/img/qrcode.png"></img>
