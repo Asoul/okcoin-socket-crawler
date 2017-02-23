@@ -51,3 +51,14 @@ sudo supervisorctl update
 # 執行 supervisor
 sudo supervisorctl start okcoin-socket-crawler
 ```
+
+# Contribution
+
+有任何想法都歡迎發 PR、開 issue，或與我聯絡 `azx754@gmail.com`。
+
+# License
+MIT
+
+# Donate
+
+BTC 錢包: 3QB4Liv4Yp1ttpHnk8DT135juhKTBEWDc7
