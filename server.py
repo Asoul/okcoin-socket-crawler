@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-db_url = 'mysql+pymysql://root:@localhost/okcoin'
+db_url = 'mysql+pymysql://root:@localhost/okcoin_future'
 
 engine = create_engine(db_url)
 Session = sessionmaker(bind=engine)
