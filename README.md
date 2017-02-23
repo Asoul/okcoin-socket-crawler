@@ -2,6 +2,8 @@
 
 一個串接 okcoin websocket 的小爬蟲，把資料存到 MySQL，附上 supervisor 腳本可以長期開在伺服器上。
 
+![](https://raw.githubusercontent.com/Asoul/okcoin-socket-crawler/master/img/okcoin.png)
+
 ## 基本需求
 
 - Python3
@@ -62,3 +64,5 @@ MIT
 # Donate
 
 BTC 錢包: 3QB4Liv4Yp1ttpHnk8DT135juhKTBEWDc7
+
+![](https://raw.githubusercontent.com/Asoul/okcoin-socket-crawler/master/img/qrcode.png)
