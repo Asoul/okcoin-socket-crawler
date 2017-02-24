@@ -3,6 +3,7 @@ import json
 import time
 import hashlib
 import sys
+from multiprocessing import Process, Manager
 from datetime import datetime
 
 import sqlalchemy as sa
@@ -15,6 +16,11 @@ db_url = 'mysql+pymysql://root:@localhost/okcoin_future'
 engine = create_engine(db_url)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
+
+manager = Manager()
+shared_dict = manager.dict()
+shared_dict['last_ping_time'] = time.time()
+ping_process = None
 
 class FutureIndex(Base):
     __tablename__ = 'future_index'
@@ -102,8 +108,22 @@ class FutureTick(Base):
 def log(*args, **kargs):
     print(datetime.now().strftime('[%Y/%m/%d %H:%M:%S]'), *args, **kargs)
 
+def ping(ws, shared_dict):
+    while True:
+        time_pass = time.time() - shared_dict['last_ping_time']
+        if time_pass > 20:
+            ws.close()
+            break
+        elif time_pass > 10:
+            ws.send("{'event':'ping'}")
+        time.sleep(1)
+
 def on_message(ws, messages):
     messages = json.loads(messages)
+    if type(messages) == dict and messages.get('event') == 'pong':
+        shared_dict['last_ping_time'] = time.time()
+        return
+
     for message in messages:
         try:
             channel = message.get('channel')
@@ -171,7 +191,8 @@ def on_message(ws, messages):
                 future_tick = FutureTick(data, channel)
                 session.merge(future_tick)
                 session.commit()
-
+            else:
+                log('Get unhandled channel', channel, file=sys.stderr)
 
         except Exception as e:
             print(e, file=sys.stderr)
@@ -181,6 +202,9 @@ def on_error(ws, error):
     log('error', error, file=sys.stderr)
 
 def on_close(ws):
+    global ping_process
+    if ping_process:
+        ping_process.join(3)
     log("### closed ###")
 
 def on_open(ws):
@@ -201,6 +225,12 @@ def on_open(ws):
     ws.send("{'event':'addChannel','channel':'ok_sub_futureusd_btc_ticker_this_week'}")
     ws.send("{'event':'addChannel','channel':'ok_sub_futureusd_btc_ticker_next_week'}")
     ws.send("{'event':'addChannel','channel':'ok_sub_futureusd_btc_ticker_quarter'}")
+
+    # Health Beat
+    global ping_process
+    ping_process = Process(target=ping, args=(ws, shared_dict))
+    ping_process.start()
+
 
 if __name__ == "__main__":
     websocket.enableTrace(True)
