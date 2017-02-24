@@ -112,6 +112,7 @@ def ping(ws, shared_dict):
     while True:
         time_pass = time.time() - shared_dict['last_ping_time']
         if time_pass > 20:
+            log('Not got pong for 20 seconds, exit process')
             ws.close()
             break
         elif time_pass > 10:
