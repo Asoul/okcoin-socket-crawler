@@ -20,7 +20,10 @@ Base = declarative_base()
 manager = Manager()
 shared_dict = manager.dict()
 shared_dict['last_ping_time'] = time.time()
+shared_dict['last_check_time'] = time.time()
+
 ping_process = None
+checker_process = None
 
 class FutureIndex(Base):
     __tablename__ = 'future_index'
@@ -119,6 +122,45 @@ def ping(ws, shared_dict):
             ws.send("{'event':'ping'}")
         time.sleep(1)
 
+def check(ws, shared_dict):
+    # Start check after 30 seconds
+    start_time = int(time.time())
+    time.sleep(30)
+
+    while True:
+        now = int(time.time())
+        time_pass = now - shared_dict['last_check_time']
+
+        session = Session()
+
+        last_future_index_timestamp = session.query(FutureIndex.timestamp)\
+            .order_by(FutureIndex.timestamp.desc()).first()[0]
+        last_future_trade_timestamp = session.query(FutureTrade.timestamp)\
+            .order_by(FutureTrade.timestamp.desc()).first()[0]
+        last_future_tick_timestamp = session.query(FutureTick.timestamp)\
+            .order_by(FutureTick.timestamp.desc()).first()[0]
+        num_of_last_hour_future_kline = session.query(FutureKline1min.timestamp)\
+            .filter(FutureKline1min.timestamp > now - 3600).count()
+
+        should_exit = False
+        if now - last_future_index_timestamp / 1000 > 60:
+            should_exit = True
+        if now - last_future_trade_timestamp > 60:
+            should_exit = True
+        if now - last_future_tick_timestamp / 100000 > 60:
+            should_exit = True
+        if num_of_last_hour_future_kline < min(177, (now - start_time) / 20):
+            should_exit = True
+
+        session.close()
+
+        if should_exit:
+            ws.close()
+            break
+
+        shared_dict['last_check_time'] = now
+        time.sleep(30)
+
 def on_message(ws, messages):
     messages = json.loads(messages)
     if type(messages) == dict and messages.get('event') == 'pong':
@@ -142,6 +184,7 @@ def on_message(ws, messages):
                 future_index = FutureIndex(data)
                 session.merge(future_index)
                 session.commit()
+                session.close()
 
             elif channel[:27] == 'ok_sub_futureusd_btc_trade_':
                 trade_pairs = message.get('data')
@@ -165,6 +208,7 @@ def on_message(ws, messages):
                     future_trade = FutureTrade(trade_pair, contract_type)
                     session.merge(future_trade)
                 session.commit()
+                session.close()
             elif channel[:27] == 'ok_sub_futureusd_btc_kline_':
                 kline_pairs = message.get('data')
                 if not kline_pairs:
@@ -182,6 +226,7 @@ def on_message(ws, messages):
                     future_kline_1min = FutureKline1min(kline_pair, channel)
                     session.merge(future_kline_1min)
                 session.commit()
+                session.close()
             elif channel[:28] == 'ok_sub_futureusd_btc_ticker_':
                 data = message.get('data')
                 if not data:
@@ -192,11 +237,12 @@ def on_message(ws, messages):
                 future_tick = FutureTick(data, channel)
                 session.merge(future_tick)
                 session.commit()
+                session.close()
             else:
                 log('Get unhandled channel', channel, file=sys.stderr)
 
         except Exception as e:
-            print(e, file=sys.stderr)
+            log(e, file=sys.stderr)
             pass
 
 def on_error(ws, error):
@@ -204,8 +250,11 @@ def on_error(ws, error):
 
 def on_close(ws):
     global ping_process
+    global checker_process
     if ping_process:
         ping_process.join(3)
+    if checker_process:
+        checker_process.join(3)
     log("### closed ###")
 
 def on_open(ws):
@@ -231,6 +280,11 @@ def on_open(ws):
     global ping_process
     ping_process = Process(target=ping, args=(ws, shared_dict))
     ping_process.start()
+
+    # Checker Process
+    global checker_process
+    checker_process = Process(target=check, args=(ws, shared_dict))
+    checker_process.start()
 
 
 if __name__ == "__main__":
