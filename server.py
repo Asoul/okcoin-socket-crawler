@@ -11,17 +11,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+# Database settings
 db_url = 'mysql+pymysql://root:@localhost/okcoin_future'
-
 engine = create_engine(db_url)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
+# Shared memory between process
 manager = Manager()
 shared_dict = manager.dict()
 shared_dict['last_ping_time'] = time.time()
 shared_dict['last_check_time'] = time.time()
 
+# Process
 ping_process = None
 checker_process = None
 
@@ -111,7 +113,7 @@ class FutureTick(Base):
 def log(*args, **kargs):
     print(datetime.now().strftime('[%Y/%m/%d %H:%M:%S]'), *args, **kargs)
 
-def ping(ws, shared_dict):
+def ping(ws):
     while True:
         time_pass = time.time() - shared_dict['last_ping_time']
         if time_pass > 20:
@@ -122,7 +124,7 @@ def ping(ws, shared_dict):
             ws.send("{'event':'ping'}")
         time.sleep(1)
 
-def check(ws, shared_dict):
+def check(ws):
     # Start check after 30 seconds
     start_time = int(time.time())
     time.sleep(30)
@@ -278,12 +280,12 @@ def on_open(ws):
 
     # Health Beat
     global ping_process
-    ping_process = Process(target=ping, args=(ws, shared_dict))
+    ping_process = Process(target=ping, args=(ws,))
     ping_process.start()
 
     # Checker Process
     global checker_process
-    checker_process = Process(target=check, args=(ws, shared_dict))
+    checker_process = Process(target=check, args=(ws,))
     checker_process.start()
 
 
